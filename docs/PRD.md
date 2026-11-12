@@ -140,7 +140,7 @@ Every table states its Unicode block ranges. The script of each code point is lo
    - Other script otherwise: dropped. Its letters count as not covered.
 3. **Coverage** is covered letters divided by all letters. Letters are Unicode category L and combining marks attached to letters, counted per code point. ASCII letters and letters converted by a table or by ICU count as covered. Digits do not count either way.
 4. The result is lower-cased. Every run of characters outside `[a-z0-9]` becomes one hyphen. Hyphens at either end are trimmed.
-5. **Length.** If the slug is longer than `maxLength` (default 80), it is cut at the last hyphen at or before `maxLength`. If that hyphen sits before position `minCutPosition` (default 20), the cut would leave a stub, so the slug is cut hard at `maxLength` instead. Trailing hyphens are then trimmed.
+5. **Length.** If the slug is longer than `maxLength` (default 80), it is cut at the last hyphen at or before `maxLength`. If there is no such hyphen, or it sits before position `minCutPosition` (default 20), the cut would leave a stub or nothing, so the slug is cut hard at `maxLength` instead. Trailing hyphens are then trimmed.
 6. **Readability floor.** The transliterated slug is used only if all of these hold:
    - It has at least `minAlnum` (default 3) characters from `[a-z0-9]`.
    - It has at least one letter. An all-digit slug clashes with date and page-number URLs, so it is not accepted.
@@ -390,7 +390,7 @@ Library: slug, hash, uniqueness (4.3, 4.4, 4.5)
 26. (4.3.6) `एक` alone (two letters, `ek`) gives the hash fallback. `२०२६` alone (digits only) gives the hash fallback.
 27. (4.3.6) A Thai title with one English word, with `intl` off, gives the hash fallback because of coverage.
 28. (4.3.7, 4.3.8) `SlugResult` reports `method`, `coverage` and `scripts` correctly for one ASCII, one transliterated and one hashed case.
-29. (4.4.1 to 4.4.5) The fallback for a Thai title is `post-20261112-` followed by 8 hex characters, 22 characters in all. With `includeDate` off it is 13 characters. With `hashLength` 12 it is 26.
+29. (4.4.1 to 4.4.5) `fallback()` called with a Thai title returns `post-20261112-` followed by 8 hex characters, 22 characters in all. With `includeDate` off it is 13 characters. With `hashLength` 12 it is 26.
 30. (4.4.2) Prefixes `Post`, `1post`, `post-x` and a 21-character prefix each raise `InvalidOptionException`.
 31. (4.4.6) The same title on the same day gives the same fallback. A different title gives a different hash.
 32. (4.4.7) A title made only of zero-width characters gives a valid fallback.
