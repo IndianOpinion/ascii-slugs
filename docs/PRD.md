@@ -17,7 +17,7 @@ WordPress makes a post slug from the title. When the title is not in Latin scrip
 
 The slug column holds 200 bytes, and WordPress cuts the encoded slug at 200 bytes without warning. A Devanagari title keeps only about 22 code points (vowel signs count as code points). The URL ends in the middle of a word. Nothing errors and no log line is written. The broken URL is then shared, indexed and linked for good.
 
-Worked example: a Hindi headline of 40 code points needs 360 bytes once encoded. WordPress keeps 198 of them, which is the first 22 code points, and the URL stops in the middle of the third word.
+Worked example: a Hindi headline of 40 code points needs 360 bytes once encoded. WordPress keeps 198 of them, which is the first 22 code points, and the URL usually stops in the middle of a word.
 
 Other costs of percent-encoded slugs:
 
