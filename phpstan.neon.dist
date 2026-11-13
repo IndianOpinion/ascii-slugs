@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - plugin/src
+        - tables
+        - bootstrap.php
+        - ascii-slugs.php
+        - uninstall.php
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+    bootstrapFiles:
+        - tests/phpstan-constants.php
