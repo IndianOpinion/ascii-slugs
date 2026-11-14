@@ -51,6 +51,13 @@ final class PreparationTest extends TestCase
     {
         self::assertSame('bharat', $this->slugger->slug('<b>भारत</b>')->slug);
         self::assertSame('bharat', $this->slugger->slug('&lt;em&gt;भारत&lt;/em&gt;')->slug);
+        self::assertSame('ab-bharat', $this->slugger->slug('a<!-- note -->b भारत')->slug);
+    }
+
+    public function testALessThanSignThatIsNotATagKeepsTheTextAfterIt(): void
+    {
+        self::assertSame('sensex-3-5-bharat-samachar', $this->slugger->slug('Sensex 3<5 भारत समाचार')->slug);
+        self::assertSame('a-b-bharat', $this->slugger->slug('a < b भारत')->slug);
     }
 
     public function testJoinersInsideConjunctsChangeNothing(): void
@@ -142,6 +149,9 @@ final class PreparationTest extends TestCase
             $this->slugger->slug("\u{0B95}\u{0BCA}\u{0B9F}\u{0BC8}")->slug,
             $this->slugger->slug("\u{0B95}\u{0BC6}\u{0BBE}\u{0B9F}\u{0BC8}")->slug
         );
+        // Tamil letter au as one code point, and as letter o + au length mark.
+        self::assertSame('auvaiyar', $this->slugger->slug("\u{0B92}\u{0BD7}\u{0BB5}\u{0BC8}\u{0BAF}\u{0BBE}\u{0BB0}\u{0BCD}")->slug);
+        self::assertSame('auvaiyar', $this->slugger->slug("\u{0B94}\u{0BB5}\u{0BC8}\u{0BAF}\u{0BBE}\u{0BB0}\u{0BCD}")->slug);
         // Bengali o-sign.
         self::assertSame(
             $this->slugger->slug("\u{0995}\u{09CB}\u{09A8}")->slug,

@@ -30,6 +30,7 @@ return [
             "\u{099A}" => 'ch', // BENGALI LETTER CA
             "\u{099B}" => 'chh', // BENGALI LETTER CHA
             "\u{099C}" => 'j', // BENGALI LETTER JA
+            "\u{099C}\u{09CD}\u{099E}" => 'gy', // BENGALI LETTER JA + BENGALI SIGN VIRAMA + BENGALI LETTER NYA
             "\u{099D}" => 'jh', // BENGALI LETTER JHA
             "\u{099E}" => 'n', // BENGALI LETTER NYA
             "\u{099F}" => 't', // BENGALI LETTER TTA

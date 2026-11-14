@@ -18,6 +18,18 @@ final class AbjadEngine implements Engine
 
     private const SPELLING_CLASSES = ['consonant', 'vowel', 'yeh', 'waw'];
 
+    /**
+     * Arabic letter forms that Urdu text typed on an Arabic keyboard uses
+     * in place of the Urdu ones. Exception words are looked up with these
+     * folded, so `ہے` and `هے` find the same entry.
+     */
+    public const EXCEPTION_FOLD = [
+        "\u{0647}" => "\u{06C1}", // ARABIC LETTER HEH -> HEH GOAL
+        "\u{064A}" => "\u{06CC}", // ARABIC LETTER YEH -> FARSI YEH
+        "\u{0649}" => "\u{06CC}", // ARABIC LETTER ALEF MAKSURA -> FARSI YEH
+        "\u{0643}" => "\u{06A9}", // ARABIC LETTER KAF -> KEHEH
+    ];
+
     public function render(array $tokens, ArrayScriptTable $table, bool $dropFinalInherentVowel): string
     {
         $exceptions = $table->rule('exceptionWords', []);
@@ -54,8 +66,9 @@ final class AbjadEngine implements Engine
                 $key .= $token->sequence;
             }
         }
-        if (isset($exceptions[$key]) && is_string($exceptions[$key])) {
-            return $exceptions[$key];
+        $word = $exceptions[$key] ?? $exceptions[strtr($key, self::EXCEPTION_FOLD)] ?? null;
+        if (is_string($word)) {
+            return $word;
         }
 
         $out = '';

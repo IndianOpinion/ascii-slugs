@@ -80,8 +80,13 @@ return [
             "\u{095D}" => 'rh', // DEVANAGARI LETTER RHA
             "\u{095E}" => 'f', // DEVANAGARI LETTER FA
             "\u{095F}" => 'y', // DEVANAGARI LETTER YYA
-            "\u{0979}" => 'z', // DEVANAGARI LETTER ZHA
+            "\u{0978}" => 'd', // DEVANAGARI LETTER MARWARI DDA
+            "\u{0979}" => 'zh', // DEVANAGARI LETTER ZHA
             "\u{097A}" => 'y', // DEVANAGARI LETTER HEAVY YA
+            "\u{097B}" => 'g', // DEVANAGARI LETTER GGA
+            "\u{097C}" => 'j', // DEVANAGARI LETTER JJA
+            "\u{097E}" => 'd', // DEVANAGARI LETTER DDDA
+            "\u{097F}" => 'b', // DEVANAGARI LETTER BBA
         ],
         'vowel' => [
             "\u{0904}" => 'a', // DEVANAGARI LETTER SHORT A
@@ -130,7 +135,7 @@ return [
             "\u{094C}" => 'au', // DEVANAGARI VOWEL SIGN AU
             "\u{094E}" => 'e', // DEVANAGARI VOWEL SIGN PRISHTHAMATRA E
             "\u{094F}" => 'aw', // DEVANAGARI VOWEL SIGN AW
-            "\u{0955}" => 'o', // DEVANAGARI VOWEL SIGN CANDRA LONG E
+            "\u{0955}" => 'e', // DEVANAGARI VOWEL SIGN CANDRA LONG E
             "\u{0956}" => 'u', // DEVANAGARI VOWEL SIGN UE
             "\u{0957}" => 'u', // DEVANAGARI VOWEL SIGN UUE
             "\u{0962}" => 'li', // DEVANAGARI VOWEL SIGN VOCALIC L
@@ -143,6 +148,7 @@ return [
             "\u{0902}" => '', // DEVANAGARI SIGN ANUSVARA
         ],
         'chandrabindu' => [
+            "\u{0900}" => 'n', // DEVANAGARI SIGN INVERTED CANDRABINDU
             "\u{0901}" => 'n', // DEVANAGARI SIGN CANDRABINDU
         ],
         'visarga' => [
@@ -156,6 +162,7 @@ return [
             "\u{0953}" => '', // DEVANAGARI GRAVE ACCENT
             "\u{0954}" => '', // DEVANAGARI ACUTE ACCENT
             "\u{0971}" => '', // DEVANAGARI SIGN HIGH SPACING DOT
+            "\u{097D}" => '', // DEVANAGARI LETTER GLOTTAL STOP
         ],
         'digit' => [
             "\u{0966}" => '0', // DEVANAGARI DIGIT ZERO

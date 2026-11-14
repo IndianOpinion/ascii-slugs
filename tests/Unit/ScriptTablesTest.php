@@ -44,10 +44,13 @@ final class ScriptTablesTest extends TestCase
         yield 'bengali khanda ta' => ['উৎসব', 'utsab'];
         yield 'bengali nukta' => ['বাড়ি', 'bari'];
         yield 'assamese ra wa' => ['অসমৰ গুৱাহাটী', 'asamar-guwahati'];
+        yield 'bengali gy' => ['বিজ্ঞান', 'bigyan'];
         yield 'gurmukhi' => ['ਪੰਜਾਬ', 'panjab'];
         yield 'gurmukhi addak' => ['ਪੱਕਾ', 'pakka'];
         yield 'gujarati' => ['ગુજરાત', 'gujarat'];
+        yield 'gujarati gy' => ['વિજ્ઞાન', 'vigyan'];
         yield 'odia' => ['ଓଡ଼ିଆ', 'oria'];
+        yield 'odia gy' => ['ବିଜ୍ଞାନ', 'bigyana'];
         yield 'tamil' => ['தமிழ்', 'tamizh'];
         yield 'tamil grantha' => ['ஜனஷஸஹ', 'janashasaha'];
         yield 'tamil aytham' => ['அஃது', 'ahtu'];
@@ -55,12 +58,17 @@ final class ScriptTablesTest extends TestCase
         yield 'telugu final anusvara' => ['విజయం', 'vijayam'];
         yield 'kannada' => ['ಕನ್ನಡ', 'kannada'];
         yield 'kannada bengaluru' => ['ಬೆಂಗಳೂರು', 'bengaluru'];
+        yield 'kannada lllA (named FA)' => ['ೞ', 'zha'];
         yield 'malayalam' => ['മലയാളം', 'malayalam'];
         yield 'malayalam chillu' => ['അവൻ കേരളർ', 'avan-keralar'];
         yield 'malayalam zh' => ['കോഴിക്കോട്', 'kozhikkot'];
+        yield 'malayalam nta' => ['എന്റെ', 'ente'];
+        yield 'malayalam tta' => ['കറ്റ', 'katta'];
         yield 'urdu pakistan' => ['پاکستان', 'pakstan'];
         yield 'urdu lahore' => ['لاہور', 'lahor'];
         yield 'urdu exception' => ['اردو', 'urdu'];
+        yield 'urdu exception typed with arabic heh and yeh' => ['هے كيا', 'hai-kya'];
+        yield 'urdu word-initial ain' => ['عمران خان', 'mran-khan'];
         yield 'urdu y at start' => ['یار', 'yar'];
         yield 'urdu w at start' => ['وطن', 'wtn'];
         yield 'urdu short vowels when written' => ['کِتاب', 'kitab'];
@@ -71,6 +79,7 @@ final class ScriptTablesTest extends TestCase
         yield 'greek digraphs' => ['Ψυχή Χάος', 'psychi-chaos'];
         yield 'latin' => ['Straße Ørsted', 'strasse-orsted'];
         yield 'latin expansions' => ['Æsir Œuvre Łódź Þór', 'aesir-oeuvre-lodz-thor'];
+        yield 'latin schwa ezh open e open o' => ['Azərbaycan ʒ ɛ ɔ', 'azerbaycan-zh-e-o'];
     }
 
     #[DataProvider('words')]
@@ -205,5 +214,12 @@ final class ScriptTablesTest extends TestCase
             ],
             Transliterator::builtinScripts()
         );
+    }
+
+    public function testWordInitialLetterThatATableDropsIsStillCovered(): void
+    {
+        // Arabic ain is a letter the table drops, not a stray combining mark.
+        $result = (new Slugger(new SlugOptions(intlMode: 'never')))->slug('عمران');
+        self::assertSame(1.0, $result->coverage);
     }
 }

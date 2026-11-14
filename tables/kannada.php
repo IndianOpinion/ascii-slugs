@@ -58,11 +58,12 @@ return [
             "\u{0CB7}" => 'sh', // KANNADA LETTER SSA
             "\u{0CB8}" => 's', // KANNADA LETTER SA
             "\u{0CB9}" => 'h', // KANNADA LETTER HA
+            "\u{0CDE}" => 'zh', // KANNADA LETTER FA (a misnomer: the letter is LLLA)
+        ],
+        'dead' => [
             "\u{0CDD}" => 'n', // KANNADA LETTER NAKAARA POLLU
-            "\u{0CDE}" => 'l', // KANNADA LETTER FA
         ],
         'vowel' => [
-            "\u{0C84}" => 'a', // KANNADA SIGN SIDDHAM
             "\u{0C85}" => 'a', // KANNADA LETTER A
             "\u{0C86}" => 'a', // KANNADA LETTER AA
             "\u{0C87}" => 'i', // KANNADA LETTER I
@@ -118,6 +119,7 @@ return [
             "\u{0C83}" => 'h', // KANNADA SIGN VISARGA
         ],
         'mark' => [
+            "\u{0C84}" => '', // KANNADA SIGN SIDDHAM
             "\u{0CBC}" => '', // KANNADA SIGN NUKTA
             "\u{0CBD}" => '', // KANNADA SIGN AVAGRAHA
         ],

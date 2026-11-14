@@ -30,6 +30,7 @@ return [
             "\u{0A9A}" => 'ch', // GUJARATI LETTER CA
             "\u{0A9B}" => 'chh', // GUJARATI LETTER CHA
             "\u{0A9C}" => 'j', // GUJARATI LETTER JA
+            "\u{0A9C}\u{0ACD}\u{0A9E}" => 'gy', // GUJARATI LETTER JA + GUJARATI SIGN VIRAMA + GUJARATI LETTER NYA
             "\u{0A9D}" => 'jh', // GUJARATI LETTER JHA
             "\u{0A9E}" => 'n', // GUJARATI LETTER NYA
             "\u{0A9F}" => 't', // GUJARATI LETTER TTA

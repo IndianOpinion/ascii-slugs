@@ -30,6 +30,7 @@ return [
             "\u{0B1A}" => 'ch', // ORIYA LETTER CA
             "\u{0B1B}" => 'chh', // ORIYA LETTER CHA
             "\u{0B1C}" => 'j', // ORIYA LETTER JA
+            "\u{0B1C}\u{0B4D}\u{0B1E}" => 'gy', // ORIYA LETTER JA + ORIYA SIGN VIRAMA + ORIYA LETTER NYA
             "\u{0B1D}" => 'jh', // ORIYA LETTER JHA
             "\u{0B1E}" => 'n', // ORIYA LETTER NYA
             "\u{0B1F}" => 't', // ORIYA LETTER TTA

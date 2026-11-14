@@ -371,9 +371,12 @@ final class Transliterator
             $char = $chars[$i];
             if ($max > 1 && $table->startsSequence($char)) {
                 for ($length = min($max, $count - $i); $length > 1; $length--) {
-                    $parts = array_slice($chars, $i, $length);
-                    $sequence = implode('', $parts);
+                    $sequence = $char;
+                    for ($k = 1; $k < $length; $k++) {
+                        $sequence .= $chars[$i + $k];
+                    }
                     if (isset($classOf[$sequence])) {
+                        $parts = array_slice($chars, $i, $length);
                         $tokens[] = new Token($sequence, $classOf[$sequence], $map[$sequence], $this->countLetters($parts));
                         $i += $length;
                         continue 2;
@@ -396,8 +399,14 @@ final class Transliterator
 
         // Signs with no base letter at the start of a run follow a character
         // of another script: bad input, dropped and not covered (PRD 4.8.5).
+        // Only true combining marks count. Letters that a table drops, such
+        // as Arabic ain or the avagraha, may start a word.
         foreach ($tokens as $k => $token) {
-            if (!in_array($token->class, self::COMBINING_CLASSES, true) || $token->letters === 0) {
+            if (
+                !in_array($token->class, self::COMBINING_CLASSES, true)
+                || $token->letters === 0
+                || preg_match('/^\p{M}/u', $token->sequence) !== 1
+            ) {
                 break;
             }
             $tokens[$k] = new Token($token->sequence, null, '', $token->letters);

@@ -86,6 +86,7 @@ return [
             "\u{06C8}" => 'u', // ARABIC LETTER YU
             "\u{06CB}" => 'v', // ARABIC LETTER VE
             "\u{06D5}" => 'h', // ARABIC LETTER AE
+            "\u{06D5}\u{0654}" => 'h', // ARABIC LETTER AE + ARABIC HAMZA ABOVE
         ],
         'vowel' => [
             "\u{0622}" => 'a', // ARABIC LETTER ALEF WITH MADDA ABOVE

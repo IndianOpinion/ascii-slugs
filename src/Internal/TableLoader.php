@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IndianOpinion\AsciiSlugs\Internal;
 
 use IndianOpinion\AsciiSlugs\ArrayScriptTable;
+use IndianOpinion\AsciiSlugs\Internal\Engine\AbjadEngine;
 use LogicException;
 
 /**
@@ -65,7 +66,7 @@ final class TableLoader
                 $clean = [];
                 foreach ($words as $word => $ascii) {
                     if (is_string($ascii)) {
-                        $clean[(string) $word] = $ascii;
+                        $clean[strtr((string) $word, AbjadEngine::EXCEPTION_FOLD)] = $ascii;
                     }
                 }
                 $table = $table->withRules(['exceptionWords' => $clean]);

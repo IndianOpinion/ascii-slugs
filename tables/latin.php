@@ -14,6 +14,10 @@ return [
     'type' => 'alphabet',
     'ranges' => [
         [0x00C0, 0x024F],
+        [0x0254, 0x0254],
+        [0x0259, 0x0259],
+        [0x025B, 0x025B],
+        [0x0292, 0x0292],
         [0x1E00, 0x1EFF],
     ],
     'rules' => [
@@ -326,6 +330,10 @@ return [
             "\u{0233}" => 'y', // LATIN SMALL LETTER Y WITH MACRON
             "\u{0238}" => 'db', // LATIN SMALL LETTER DB DIGRAPH
             "\u{0239}" => 'qp', // LATIN SMALL LETTER QP DIGRAPH
+            "\u{0254}" => 'o', // LATIN SMALL LETTER OPEN O
+            "\u{0259}" => 'e', // LATIN SMALL LETTER SCHWA
+            "\u{025B}" => 'e', // LATIN SMALL LETTER OPEN E
+            "\u{0292}" => 'zh', // LATIN SMALL LETTER EZH
             "\u{1E00}" => 'a', // LATIN CAPITAL LETTER A WITH RING BELOW
             "\u{1E01}" => 'a', // LATIN SMALL LETTER A WITH RING BELOW
             "\u{1E02}" => 'b', // LATIN CAPITAL LETTER B WITH DOT ABOVE

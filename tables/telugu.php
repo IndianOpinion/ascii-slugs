@@ -63,6 +63,9 @@ return [
             "\u{0C59}" => 'z', // TELUGU LETTER DZA
             "\u{0C5A}" => 'r', // TELUGU LETTER RRRA
         ],
+        'dead' => [
+            "\u{0C5D}" => 'n', // TELUGU LETTER NAKAARA POLLU
+        ],
         'vowel' => [
             "\u{0C05}" => 'a', // TELUGU LETTER A
             "\u{0C06}" => 'a', // TELUGU LETTER AA
@@ -106,11 +109,11 @@ return [
         ],
         'anusvara' => [
             "\u{0C02}" => '', // TELUGU SIGN ANUSVARA
+            "\u{0C04}" => '', // TELUGU SIGN COMBINING ANUSVARA ABOVE
         ],
         'chandrabindu' => [
             "\u{0C00}" => 'n', // TELUGU SIGN COMBINING CANDRABINDU ABOVE
             "\u{0C01}" => 'n', // TELUGU SIGN CANDRABINDU
-            "\u{0C04}" => 'n', // TELUGU SIGN COMBINING ANUSVARA ABOVE
         ],
         'visarga' => [
             "\u{0C03}" => 'h', // TELUGU SIGN VISARGA

@@ -42,6 +42,7 @@ return [
             "\u{0D26}" => 'd', // MALAYALAM LETTER DA
             "\u{0D27}" => 'dh', // MALAYALAM LETTER DHA
             "\u{0D28}" => 'n', // MALAYALAM LETTER NA
+            "\u{0D28}\u{0D4D}\u{0D31}" => 'nt', // MALAYALAM LETTER NA + MALAYALAM SIGN VIRAMA + MALAYALAM LETTER RRA
             "\u{0D29}" => 'n', // MALAYALAM LETTER NNNA
             "\u{0D2A}" => 'p', // MALAYALAM LETTER PA
             "\u{0D2B}" => 'ph', // MALAYALAM LETTER PHA
@@ -51,6 +52,7 @@ return [
             "\u{0D2F}" => 'y', // MALAYALAM LETTER YA
             "\u{0D30}" => 'r', // MALAYALAM LETTER RA
             "\u{0D31}" => 'r', // MALAYALAM LETTER RRA
+            "\u{0D31}\u{0D4D}\u{0D31}" => 'tt', // MALAYALAM LETTER RRA + MALAYALAM SIGN VIRAMA + MALAYALAM LETTER RRA
             "\u{0D32}" => 'l', // MALAYALAM LETTER LA
             "\u{0D33}" => 'l', // MALAYALAM LETTER LLA
             "\u{0D34}" => 'zh', // MALAYALAM LETTER LLLA
@@ -62,6 +64,7 @@ return [
             "\u{0D3A}" => 'tt', // MALAYALAM LETTER TTTA
         ],
         'dead' => [
+            "\u{0D4E}" => 'r', // MALAYALAM LETTER DOT REPH
             "\u{0D54}" => 'm', // MALAYALAM LETTER CHILLU M
             "\u{0D55}" => 'y', // MALAYALAM LETTER CHILLU Y
             "\u{0D56}" => 'zh', // MALAYALAM LETTER CHILLU LLL
@@ -73,7 +76,6 @@ return [
             "\u{0D7F}" => 'k', // MALAYALAM LETTER CHILLU K
         ],
         'vowel' => [
-            "\u{0D04}" => 'a', // MALAYALAM LETTER VEDIC ANUSVARA
             "\u{0D05}" => 'a', // MALAYALAM LETTER A
             "\u{0D06}" => 'a', // MALAYALAM LETTER AA
             "\u{0D07}" => 'i', // MALAYALAM LETTER I
@@ -125,10 +127,10 @@ return [
             "\u{0D03}" => 'h', // MALAYALAM SIGN VISARGA
         ],
         'mark' => [
+            "\u{0D04}" => '', // MALAYALAM LETTER VEDIC ANUSVARA
             "\u{0D3B}" => '', // MALAYALAM SIGN VERTICAL BAR VIRAMA
             "\u{0D3C}" => '', // MALAYALAM SIGN CIRCULAR VIRAMA
             "\u{0D3D}" => '', // MALAYALAM SIGN AVAGRAHA
-            "\u{0D4E}" => '', // MALAYALAM LETTER DOT REPH
         ],
         'digit' => [
             "\u{0D66}" => '0', // MALAYALAM DIGIT ZERO

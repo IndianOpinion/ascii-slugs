@@ -61,6 +61,7 @@ return [
             "\u{0B90}" => 'ai', // TAMIL LETTER AI
             "\u{0B92}" => 'o', // TAMIL LETTER O
             "\u{0B93}" => 'o', // TAMIL LETTER OO
+            "\u{0B92}\u{0BD7}" => 'au', // TAMIL LETTER O + TAMIL AU LENGTH MARK
             "\u{0B94}" => 'au', // TAMIL LETTER AU
         ],
         'sign' => [

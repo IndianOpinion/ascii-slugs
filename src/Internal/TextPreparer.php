@@ -21,6 +21,12 @@ final class TextPreparer
     private const INNER_QUOTE = '/(?<=[\p{L}\p{M}\p{N}])[\x{0027}\x{2019}\x{02BC}\x{2018}\x{0022}\x{201C}\x{201D}]'
         . '(?=[\p{L}\p{M}\p{N}])/u';
 
+    /**
+     * An HTML tag or comment. A bare `<` followed by a digit, a space or
+     * nothing that closes it is text, not a tag: `3<5` stays.
+     */
+    private const TAG = '/<!--.*?-->|<\/?[A-Za-z][^<>]*>/s';
+
     private const ENTITY_PASSES = 3;
 
     /**
@@ -41,7 +47,7 @@ final class TextPreparer
             $text = $decoded;
         }
 
-        $text = strip_tags($text);
+        $text = (string) preg_replace(self::TAG, '', $text);
         $text = (string) preg_replace(self::INVISIBLE, '', $text);
 
         return (string) preg_replace(self::INNER_QUOTE, '', $text);
