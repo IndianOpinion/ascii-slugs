@@ -99,6 +99,15 @@ class WP_Post
     public string $post_status = 'publish';
     public string $post_date_gmt = '0000-00-00 00:00:00';
     public int $post_parent = 0;
+    public string $post_content = '';
+}
+
+class WP_Term
+{
+    public int $term_id = 0;
+    public string $name = '';
+    public string $slug = '';
+    public string $taxonomy = '';
 }
 
 class WP_Error
@@ -160,9 +169,39 @@ function remove_filter(string $hook, callable $callback, int $priority = 10): bo
     return false;
 }
 
-function has_filter(string $hook): bool
+function has_filter(string $hook, mixed $callback = false): bool|int
 {
-    return !empty(WpStub::$filters[$hook]);
+    if ($callback === false) {
+        return !empty(WpStub::$filters[$hook]);
+    }
+    foreach (WpStub::$filters[$hook] ?? [] as $priority => $list) {
+        foreach ($list as [$registered]) {
+            if ($registered == $callback) {
+                return $priority;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Core's kses_init_filters(): the content filters active for a user
+ * without unfiltered_html, such as WP-CLI with no --user.
+ */
+function kses_init_filters(): void
+{
+    add_filter('content_save_pre', 'wp_filter_post_kses');
+}
+
+function kses_remove_filters(): void
+{
+    remove_filter('content_save_pre', 'wp_filter_post_kses');
+}
+
+function wp_filter_post_kses(string $content): string
+{
+    return strip_tags($content);
 }
 
 function apply_filters(string $hook, mixed $value, mixed ...$args): mixed
@@ -329,13 +368,28 @@ function wp_insert_post(array $data, bool $wpError = false): int|WP_Error
         }
     }
 
+    if (array_key_exists('post_content', $data)) {
+        $post->post_content = (string) apply_filters('content_save_pre', (string) $data['post_content']);
+    } elseif ($update) {
+        // wp_update_post() merges the stored post and saves it all again.
+        $post->post_content = (string) apply_filters('content_save_pre', $post->post_content);
+    }
+
     $name = array_key_exists('post_name', $data) ? (string) $data['post_name'] : ($previous->post_name ?? '');
     if ($name === '') {
         $name = in_array($post->post_status, ['draft', 'pending', 'auto-draft'], true)
             ? ''
             : sanitize_title($post->post_title);
     } else {
-        $name = sanitize_title($name);
+        // Core keeps a stored encoded slug that comes back decoded (the
+        // classic editor and Quick Edit send it that way) by checking it in
+        // the old-save context.
+        $check = sanitize_title($name, '', 'old-save');
+        if ($update && strtolower(urlencode($name)) === $check && $previous->post_name === $check) {
+            $name = $check;
+        } else {
+            $name = sanitize_title($name);
+        }
     }
     $name = wp_unique_post_slug($name, $id, $post->post_status, $post->post_type, $post->post_parent);
 
@@ -375,6 +429,57 @@ function wp_insert_term(string $name, string $taxonomy): array
     WpStub::$writes++;
 
     return ['term_id' => $id];
+}
+
+/**
+ * Core's get_term_by(), for the slug field only.
+ */
+function get_term_by(string $field, mixed $value, string $taxonomy = ''): WP_Term|false
+{
+    if ($field !== 'slug') {
+        return false;
+    }
+    $value = sanitize_title((string) $value);
+    foreach (WpStub::$terms as $id => $term) {
+        if ($term['slug'] === $value && $term['taxonomy'] === $taxonomy) {
+            $found = new WP_Term();
+            $found->term_id = $id;
+            $found->name = $term['name'];
+            $found->slug = $term['slug'];
+            $found->taxonomy = $term['taxonomy'];
+
+            return $found;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Core's wp_update_term(), cut down to the slug: the stored values are
+ * merged with the new ones, and sanitize_term() runs pre_term_slug on the
+ * slug before it is saved.
+ *
+ * @param array<string, mixed> $args
+ *
+ * @return array{term_id: int}|WP_Error
+ */
+function wp_update_term(int $termId, string $taxonomy, array $args = []): array|WP_Error
+{
+    $term = WpStub::$terms[$termId] ?? null;
+    if ($term === null || $term['taxonomy'] !== $taxonomy) {
+        return new WP_Error('invalid_term', 'Empty Term.');
+    }
+    $args += ['name' => $term['name'], 'slug' => $term['slug']];
+    $name = (string) $args['name'];
+    $slug = (string) apply_filters('pre_term_slug', (string) $args['slug'], $taxonomy);
+    if ($slug === '') {
+        $slug = sanitize_title($name);
+    }
+    WpStub::$terms[$termId] = ['name' => $name, 'slug' => $slug, 'taxonomy' => $taxonomy];
+    WpStub::$writes++;
+
+    return ['term_id' => $termId];
 }
 
 /**

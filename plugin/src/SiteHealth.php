@@ -12,6 +12,13 @@ use IndianOpinion\AsciiSlugs\Transliterator;
  */
 final class SiteHealth
 {
+    /**
+     * The encoded-slug count reads every published row of the covered post
+     * types (REGEXP cannot use an index). Above this many rows it is not
+     * run, so the Info screen stays fast on large sites.
+     */
+    public const SCAN_LIMIT = 100000;
+
     private ?PostSource $source;
 
     public function __construct(private readonly Plugin $plugin, ?PostSource $source = null)
@@ -37,7 +44,19 @@ final class SiteHealth
 
         $intl = Transliterator::intlAvailable();
         $source = $this->source ?? new WpdbPostSource();
-        $count = $source->countEncoded($this->plugin->postTypes(), ['publish']);
+        $types = $this->plugin->postTypes();
+        $limit = $this->scanLimit();
+        if ($source->countPosts($types, ['publish'], $limit) > $limit) {
+            $count = null;
+            $countValue = sprintf(
+                /* translators: %d: number of published posts. */
+                __('Not counted on this screen: more than %d published posts. Run "wp ascii-slugs audit --format=count".', 'ascii-slugs'),
+                $limit
+            );
+        } else {
+            $count = $source->countEncoded($types, ['publish']);
+            $countValue = (string) $count;
+        }
 
         $info['ascii-slugs'] = [
             'label' => __('ASCII Slugs', 'ascii-slugs'),
@@ -61,12 +80,27 @@ final class SiteHealth
                 ],
                 'encoded_slugs' => [
                     'label' => __('Published posts with percent-encoded slugs', 'ascii-slugs'),
-                    'value' => (string) $count,
-                    'debug' => $count,
+                    'value' => $countValue,
+                    'debug' => $count ?? 'not counted',
                 ],
             ],
         ];
 
         return $info;
+    }
+
+    /**
+     * Rows the count may read, from `ascii_slugs_site_health_scan_limit`.
+     */
+    private function scanLimit(): int
+    {
+        $limit = apply_filters('ascii_slugs_site_health_scan_limit', self::SCAN_LIMIT);
+        if (!is_int($limit) || $limit < 0) {
+            $this->plugin->logger()->notice('ascii_slugs_site_health_scan_limit returned a non-integer; ignored');
+
+            return self::SCAN_LIMIT;
+        }
+
+        return $limit;
     }
 }

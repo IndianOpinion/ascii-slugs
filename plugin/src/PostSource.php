@@ -28,4 +28,13 @@ interface PostSource
      * @param list<string> $statuses
      */
     public function countEncoded(array $postTypes, array $statuses): int;
+
+    /**
+     * How many posts of these types and statuses exist, counting no
+     * further than $limit + 1. Cheap: it reads an index, not the rows.
+     *
+     * @param list<string> $postTypes
+     * @param list<string> $statuses
+     */
+    public function countPosts(array $postTypes, array $statuses, int $limit): int;
 }

@@ -157,4 +157,42 @@ final class SanitizeTitleTest extends PluginTestCase
         $post = $this->insertPost(['post_title' => 'भारत']);
         self::assertSame($encoded, $post->post_name);
     }
+
+    public function testDecodedStoredSlugFromTheClassicEditorIsKept(): void
+    {
+        // The classic editor and Quick Edit show the stored slug URL-decoded
+        // (core's editable_slug filter) and send it back on every save.
+        $encoded = sanitize_title_with_dashes('भारत-समाचार', '', 'save');
+        $post = \WpStub::seedPost(['post_title' => 'भारत समाचार', 'post_name' => $encoded]);
+
+        self::assertSame('भारत-समाचार', $this->plugin->filterSanitizeTitle('भारत-समाचार', 'भारत-समाचार', 'old-save'));
+        $id = wp_update_post(['ID' => $post->ID, 'post_title' => 'भारत समाचार आज', 'post_name' => 'भारत-समाचार']);
+        self::assertSame($post->ID, $id);
+
+        $saved = get_post($post->ID);
+        self::assertNotNull($saved);
+        self::assertSame($encoded, $saved->post_name);
+        self::assertArrayNotHasKey($post->ID, \WpStub::$meta, 'No old-slug record: the URL did not move.');
+    }
+
+    public function testDecodedStoredTermSlugFromTheTermEditScreenIsKept(): void
+    {
+        // Core's own pre_term_slug callback.
+        add_filter('pre_term_slug', 'sanitize_title', 10, 1);
+        $encoded = sanitize_title_with_dashes('खेल', '', 'save');
+        \WpStub::$terms[1] = ['name' => 'खेल', 'slug' => $encoded, 'taxonomy' => 'category'];
+        \WpStub::$terms[2] = ['name' => 'खेल', 'slug' => $encoded, 'taxonomy' => 'post_tag'];
+
+        // The edit screen sends the slug back decoded with a new name.
+        self::assertIsArray(wp_update_term(1, 'category', ['name' => 'खेल जगत', 'slug' => 'खेल']));
+        self::assertSame($encoded, \WpStub::$terms[1]['slug']);
+
+        // A slug the editor really changed is transliterated as usual.
+        wp_update_term(1, 'category', ['slug' => 'खेल-जगत']);
+        self::assertSame('khel-jagat', \WpStub::$terms[1]['slug']);
+
+        // A new term in another taxonomy is not held back by this one.
+        self::assertSame('खेल', $this->plugin->filterPreTermSlug('खेल', 'genre'));
+        self::assertSame($encoded, $this->plugin->filterPreTermSlug('खेल', 'post_tag'));
+    }
 }

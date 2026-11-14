@@ -78,6 +78,7 @@ final class Plugin
     {
         add_filter('sanitize_title', [$this, 'filterSanitizeTitle'], self::SANITIZE_PRIORITY, 3);
         add_filter('wp_unique_post_slug', [$this, 'filterUniquePostSlug'], self::UNIQUE_PRIORITY, 6);
+        add_filter('pre_term_slug', [$this, 'filterPreTermSlug'], self::SANITIZE_PRIORITY, 2);
         (new SiteHealth($this))->register();
 
         if (defined('WP_CLI') && constant('WP_CLI') === true && class_exists('WP_CLI')) {
@@ -147,6 +148,34 @@ final class Plugin
         }
 
         return $this->makeSlug($raw);
+    }
+
+    /**
+     * Keeps a stored percent-encoded term slug when it comes back decoded.
+     *
+     * The term edit screen and Quick Edit show a stored slug through the
+     * core `editable_slug` filter, which URL-decodes it, and send it back on
+     * every save. Core would encode it again to the same bytes, but the main
+     * path would transliterate it and move the term's live URL, which has no
+     * old-slug redirect. When the encoded form is the stored slug of a term
+     * in the same taxonomy, this returns that encoded slug, so the main path
+     * sees ASCII and leaves it alone. Posts need no such guard: core checks
+     * the same round trip itself in the `old-save` context.
+     */
+    public function filterPreTermSlug(mixed $slug, mixed $taxonomy = ''): mixed
+    {
+        if (!is_string($slug) || Encoding::isAscii($slug) || !is_string($taxonomy) || $taxonomy === '') {
+            return $slug;
+        }
+        if (preg_match('//u', $slug) !== 1 || !$this->isEnabled()) {
+            return $slug;
+        }
+        $encoded = sanitize_title_with_dashes($slug, $slug, 'save');
+        if (!Encoding::hasEncodedHighByte($encoded)) {
+            return $slug;
+        }
+
+        return get_term_by('slug', $encoded, $taxonomy) instanceof \WP_Term ? $encoded : $slug;
     }
 
     /**

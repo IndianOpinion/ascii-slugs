@@ -118,7 +118,8 @@ final class Command
      * ---
      *
      * [--limit=<n>]
-     * : At most this many posts.
+     * : At most this many posts. Ignored by --format=count, which counts
+     * every match.
      * ---
      * default: 100
      * ---
@@ -146,6 +147,13 @@ final class Command
     {
         $format = $this->format($assoc, self::FORMATS);
         $query = $this->query($assoc, false);
+        if ($format === 'count') {
+            // One COUNT query over everything, not the first --limit rows.
+            $source = $this->source ?? new WpdbPostSource();
+            WP_CLI::log((string) $source->countEncoded($query->postTypes, $query->statuses));
+
+            return;
+        }
         $rows = $this->repairer()->audit($query);
         $items = array_map(static fn (RepairRow $row): array => $row->toArray(false), $rows);
         \WP_CLI\Utils\format_items($format, $items, ['ID', 'post_type', 'status', 'bytes', 'likely_cut', 'new_slug']);

@@ -73,7 +73,7 @@ final class SlugRepair
             return $row($new, RepairRow::DRY_RUN);
         }
 
-        $result = wp_update_post(['ID' => $post->id, 'post_name' => $new], true);
+        $result = $this->updateSlug($post->id, $new);
         if (is_wp_error($result)) {
             return $row($new, RepairRow::FAILED, $result->get_error_message());
         }
@@ -83,6 +83,32 @@ final class SlugRepair
         do_action('ascii_slugs_repaired', $post->id, $post->slug, $stored);
 
         return $row($stored, RepairRow::REPAIRED);
+    }
+
+    /**
+     * Saves the new slug through core's update path.
+     *
+     * wp_update_post() saves the whole post again. WP-CLI usually runs with
+     * no user, and then core's kses filters are active and would strip
+     * iframes, scripts and embeds from the stored content. Only the slug
+     * should change, so the content filters are lifted for this one save
+     * and put back after it.
+     *
+     * @return int|\WP_Error
+     */
+    private function updateSlug(int $id, string $slug): mixed
+    {
+        $kses = has_filter('content_save_pre', 'wp_filter_post_kses') !== false;
+        if ($kses) {
+            kses_remove_filters();
+        }
+        try {
+            return wp_update_post(['ID' => $id, 'post_name' => $slug], true);
+        } finally {
+            if ($kses) {
+                kses_init_filters();
+            }
+        }
     }
 
     private function proposal(EncodedPost $post): string

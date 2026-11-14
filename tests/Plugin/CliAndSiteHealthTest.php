@@ -81,6 +81,29 @@ final class CliAndSiteHealthTest extends PluginTestCase
         self::assertSame('not an array', $health->addSection('not an array'));
     }
 
+    public function testSiteHealthSkipsTheCountOnLargeSites(): void
+    {
+        \WpStub::seedPost(['post_title' => 'भारत', 'post_name' => '%e0%a4%ad%e0%a4%be']);
+        \WpStub::seedPost(['post_title' => 'x', 'post_name' => 'x']);
+        \WpStub::seedPost(['post_title' => 'y', 'post_name' => 'y']);
+        $source = new FakePostSource();
+        add_filter('ascii_slugs_site_health_scan_limit', static fn (): int => 2);
+
+        $info = (new SiteHealth($this->plugin, $source))->addSection([]);
+        self::assertIsArray($info);
+        $field = $info['ascii-slugs']['fields']['encoded_slugs'];
+        self::assertSame('not counted', $field['debug']);
+        self::assertStringContainsString('wp ascii-slugs audit --format=count', $field['value']);
+        self::assertSame(0, $source->queries, 'The REGEXP count must not run.');
+
+        // A bad filter value falls back to the default limit.
+        remove_all_filters('ascii_slugs_site_health_scan_limit');
+        add_filter('ascii_slugs_site_health_scan_limit', static fn (): string => 'lots');
+        $info = (new SiteHealth($this->plugin, $source))->addSection([]);
+        self::assertIsArray($info);
+        self::assertSame(1, $info['ascii-slugs']['fields']['encoded_slugs']['debug']);
+    }
+
     public function testSiteHealthIsHookedOnRegister(): void
     {
         self::assertTrue(has_filter('debug_information'));
@@ -116,6 +139,11 @@ final class CliAndSiteHealthTest extends PluginTestCase
 
         $db->count = 12;
         self::assertSame(12, $source->countEncoded(['post'], ['publish']));
+        self::assertSame(12, $source->countPosts(['post'], ['publish'], 100000));
+        [$sql, $args] = $db->prepared[2];
+        self::assertStringContainsString('LIMIT %d) AS capped', $sql);
+        self::assertStringNotContainsString('REGEXP', $sql);
+        self::assertSame(['wp_posts', 'post', 'publish', 100001], $args);
         self::assertSame([], $source->encodedPosts([], ['publish'], null, 0, 50));
     }
 

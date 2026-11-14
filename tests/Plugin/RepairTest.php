@@ -92,11 +92,16 @@ final class RepairTest extends PluginTestCase
 
     public function testAuditCommandFormats(): void
     {
-        $this->command()->audit([], ['format' => 'count', 'post_type' => 'post,page']);
+        // The count is every match, not the first --limit rows.
+        $this->command()->audit([], ['format' => 'count', 'post_type' => 'post,page', 'limit' => '1']);
+        $logs = \WP_CLI::messages('log');
+        self::assertSame('3', end($logs));
+        self::assertSame(0, \WpStub::$writes);
+
+        $this->command()->audit([], ['format' => 'json', 'post_type' => 'post,page']);
         $items = $this->lastItems();
         self::assertCount(3, $items);
         self::assertSame('yes', $items[0]['likely_cut']);
-        self::assertSame(0, \WpStub::$writes);
 
         $this->command()->audit([], ['status' => 'draft']);
         self::assertCount(1, $this->lastItems());
@@ -196,5 +201,25 @@ final class RepairTest extends PluginTestCase
             }
         }
         self::assertSame(0, \WpStub::$writes);
+    }
+
+    public function testRepairKeepsPostContentWhenKsesIsActive(): void
+    {
+        // WP-CLI with no --user: core's kses filters are on.
+        kses_init_filters();
+        $embed = '<iframe src="https://example.org/video"></iframe><p>पाठ</p>';
+        $post = \WpStub::seedPost([
+            'post_title' => 'वीडियो समाचार',
+            'post_name' => self::coreSlug('वीडियो समाचार'),
+            'post_content' => $embed,
+        ]);
+
+        (new SlugRepair($this->plugin, $this->source))->repair(new RepairQuery(['post'], ['publish'], [$post->ID]), true);
+
+        $saved = get_post($post->ID);
+        self::assertNotNull($saved);
+        self::assertSame('vidiyo-samachar', $saved->post_name);
+        self::assertSame($embed, $saved->post_content, 'Repair must change only the slug.');
+        self::assertNotFalse(has_filter('content_save_pre', 'wp_filter_post_kses'), 'kses must be back on after the save.');
     }
 }

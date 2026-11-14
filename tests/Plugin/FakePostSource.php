@@ -40,6 +40,18 @@ final class FakePostSource implements PostSource
         return $posts;
     }
 
+    public function countPosts(array $postTypes, array $statuses, int $limit): int
+    {
+        $count = 0;
+        foreach (\WpStub::$posts as $post) {
+            if (in_array($post->post_type, $postTypes, true) && in_array($post->post_status, $statuses, true)) {
+                $count++;
+            }
+        }
+
+        return min($count, $limit + 1);
+    }
+
     public function countEncoded(array $postTypes, array $statuses): int
     {
         return count($this->encodedPosts($postTypes, $statuses, null, 0, PHP_INT_MAX));

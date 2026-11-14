@@ -63,6 +63,22 @@ final class WpdbPostSource implements PostSource
         return $query === null ? 0 : (int) $this->db->get_var($query);
     }
 
+    public function countPosts(array $postTypes, array $statuses, int $limit): int
+    {
+        if ($postTypes === [] || $statuses === []) {
+            return 0;
+        }
+        // post_type and post_status are the head of core's type_status_date
+        // index, so this reads the index only and stops at $limit + 1.
+        $sql = 'SELECT COUNT(*) FROM (SELECT 1 FROM %i'
+            . ' WHERE post_type IN (' . self::placeholders('%s', count($postTypes)) . ')'
+            . ' AND post_status IN (' . self::placeholders('%s', count($statuses)) . ')'
+            . ' LIMIT %d) AS capped';
+        $query = $this->db->prepare($sql, array_merge([$this->db->posts], $postTypes, $statuses, [max(0, $limit) + 1]));
+
+        return $query === null ? 0 : (int) $this->db->get_var($query);
+    }
+
     /**
      * @param list<string> $postTypes
      * @param list<string> $statuses
