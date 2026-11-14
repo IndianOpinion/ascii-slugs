@@ -10,7 +10,8 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `wp ascii-slugs repair --keep-modified` (see docs/ARCHITECTURE.md, D6).
 - Built-in tables for Sinhala, Meetei Mayek, Ol Chiki and Tibetan.
-- Faster first load of a table without OPcache.
+- A faster first slug per request: the 0.5 ms budget is not met yet (about
+  1.2 ms measured with OPcache, see README, Limitations).
 
 ## [0.1.0] - 2026-11-13
 
@@ -29,9 +30,11 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Readability floor and a dated SHA-256 hash fallback.
 - Uniqueness helper for use outside WordPress.
 - WordPress plugin: `sanitize_title` main path, `wp_unique_post_slug`
-  safety net, filters and actions for every default, kill switch constant
-  `ASCII_SLUGS_DISABLED`.
+  safety net, a `pre_term_slug` guard that keeps stored term slugs when the
+  term edit screen sends them back decoded, filters and actions for every
+  default, kill switch constant `ASCII_SLUGS_DISABLED`.
 - WP-CLI commands `preview`, `status`, `audit` and `repair` (dry run by
   default).
 - Site Health Info section with `intl` availability and the count of
-  percent-encoded slugs.
+  percent-encoded slugs, skipped above 100,000 published posts
+  (`ascii_slugs_site_health_scan_limit`).

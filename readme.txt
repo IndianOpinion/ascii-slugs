@@ -48,6 +48,14 @@ Yes. Repair saves through core's normal update so that core records the old slug
 
 Yes. Return false from the `ascii_slugs_should_handle` filter.
 
+= Does repair touch post content? =
+
+No. It turns off core's kses content filters for the one save that writes the new slug, so embeds and iframes in the content are kept, then turns them back on.
+
+= Why does Site Health say "Not counted"? =
+
+Counting encoded slugs reads every published row. Above 100,000 published posts the screen skips it; run `wp ascii-slugs audit --format=count` instead, or raise the limit with the `ascii_slugs_site_health_scan_limit` filter.
+
 = How do I turn it off without deactivating? =
 
 Add `define( 'ASCII_SLUGS_DISABLED', true );` to wp-config.php, or return false from `ascii_slugs_enabled`.

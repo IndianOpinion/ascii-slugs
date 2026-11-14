@@ -8,7 +8,7 @@ needed), falls back to a short dated hash when it cannot, and ships a
 dry-run-first repair command for slugs that are already broken.
 
 Measured: `चंद्रयान मिशन की सफलता पर देश में जश्न` (38 code points) needs
-300 bytes once percent-encoded, so WordPress stores a slug cut at 200 bytes;
+286 bytes once percent-encoded, so WordPress stores a slug cut at 200 bytes;
 ascii-slugs gives `chandrayan-mishan-ki-saphalata-par-desh-men-jashn`
 (49 bytes).
 
@@ -155,12 +155,13 @@ and `toArray()` convert to and from arrays, and every option has a
 | `ascii_slugs_post_types` | filter | `string[]` | every registered type except `revision`, `nav_menu_item`, `customize_changeset`, `oembed_cache`, `user_request`, `wp_block` |
 | `ascii_slugs_slug` | filter | slug, raw title, `SlugResult` | the library slug |
 | `ascii_slugs_log` | filter | `bool` | `true` when `WP_DEBUG_LOG` is on |
+| `ascii_slugs_site_health_scan_limit` | filter | `int` | `100000`: above this many published posts, Site Health does not count encoded slugs |
 | `ascii_slugs_generated` | action | slug, raw title, `SlugResult` | |
 | `ascii_slugs_error` | action | `Throwable`, raw title | |
 | `ascii_slugs_repaired` | action | post ID, old slug, new slug | |
 
 Kill switch: `define('ASCII_SLUGS_DISABLED', true);` in `wp-config.php`,
-or return `false` from `ascii_slugs_enabled`. Both hooks then return their
+or return `false` from `ascii_slugs_enabled`. Every hook then returns its
 input unchanged.
 
 A filter that returns the wrong type is ignored (and logged when logging is
@@ -185,7 +186,8 @@ wp ascii-slugs repair --ids=12,15 --yes            # writes
 
 `audit` and `repair` take `--post_type=<list>` (default: the covered post
 types), `--status=<list>` (default `publish`) and `--limit=<n>` (default
-100). `repair` also takes `--ids=<list>`, `--batch=<n>` (default 50, the
+100). `audit --format=count` ignores `--limit` and counts every match with
+one query. `repair` also takes `--ids=<list>`, `--batch=<n>` (default 50, the
 runtime object cache is flushed between batches) and `--yes`.
 
 What `repair --yes` does, so you can decide whether to run it:
@@ -196,6 +198,10 @@ What `repair --yes` does, so you can decide whether to run it:
 - **The post's modified date moves to now.** That is core behaviour.
 - It skips pages and other hierarchical post types, because core does not
   redirect their old slugs. Use a redirect plugin for those.
+- It changes only the slug. WP-CLI usually runs with no user, so core's
+  kses filters are on and would strip iframes and embeds from the content
+  that `wp_update_post()` saves again; repair turns them off for that one
+  save and back on after it.
 - It does not purge edge caches or rebuild sitemaps. Hook
   `ascii_slugs_repaired` or purge as usual.
 - It is idempotent: a second run finds nothing. If one post fails, the rest
@@ -204,6 +210,16 @@ What `repair --yes` does, so you can decide whether to run it:
 The number to watch is `wp ascii-slugs audit --format=count`. Once the
 plugin is active it should stop growing. Site Health (Tools, Site Health,
 Info, "ASCII Slugs") shows the same count and whether `intl` is available.
+
+The count cannot use an index (`post_name REGEXP`), so it reads every
+published row of the covered post types. Measured with MySQL 8.0 on a
+2 vCPU VM: 0.25 s for 100,000 posts in memory, 36 s for 1,000,000 posts
+that did not fit the buffer pool. Site Health therefore first counts rows
+on the post type index (0.15 s, stopping at the limit) and skips the
+encoded count above 100,000 published posts, pointing to the WP-CLI
+command instead. Change the limit with `ascii_slugs_site_health_scan_limit`.
+`audit` and `repair` read the table the same way, in batches, so on a
+very large site with few encoded slugs each batch can take seconds.
 
 ## How it works
 
@@ -234,6 +250,14 @@ and never move. A second hook on `wp_unique_post_slug` catches slugs that
 arrive already percent-encoded, and finishes with core's own uniqueness
 check. Uniqueness always comes from core.
 
+Screens that let you edit a slug show the stored one URL-decoded and send
+it back decoded on every save. For posts, core spots that round trip itself
+(the `old-save` context) and keeps the stored slug. For terms it does not,
+so a third hook on `pre_term_slug` (priority 9) hands back the stored
+encoded slug when the decoded value matches a term in the same taxonomy.
+Editing a category's description therefore never moves its URL; typing a
+new slug still gives an ASCII one.
+
 The details, the full Cyrillic and Greek tables, and every design decision
 are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -254,8 +278,12 @@ are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Pages and other hierarchical types are not repaired.
 - A new post that arrives with an already percent-encoded slug and no title
   is rebuilt from the decoded slug, which may already have been cut.
-- On the CLI without OPcache, the first slug that loads a table takes about
-  1 to 2 ms (see ARCHITECTURE section 5).
+- Speed misses the PRD budget of 0.5 ms for a 200-code-point Devanagari
+  title including the first table load. Measured on a shared 2 vCPU VM,
+  PHP 8.3, OPcache on (median of 50 requests): about 1.2 ms for the first
+  slug in a request (0.45 ms of it loading the table), about 0.5 to 0.6 ms
+  once the table is loaded, about 4 ms with OPcache off. A plain ASCII
+  title costs one byte-class test. See ARCHITECTURE section 5.
 
 ### Future
 
@@ -287,7 +315,9 @@ title, so your callback decides. See `examples/wordpress-filters.php`.
 
 **Are category and tag slugs covered?**
 Yes. Every `save` call of `sanitize_title` is handled, including term names.
-Use `ascii_slugs_should_handle` to opt out.
+Use `ascii_slugs_should_handle` to opt out. A term that already has a
+percent-encoded slug keeps it when you edit the term, because the edit
+screen sends the decoded slug back unchanged (see How it works).
 
 **Two posts got the same hashed slug.**
 They had the same title on the same day. Core adds `-2`. The hash is not a

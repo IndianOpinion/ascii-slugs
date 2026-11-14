@@ -46,11 +46,11 @@ any release.
 
 | Class | Role |
 |---|---|
-| `Plugin` | Hooks `sanitize_title` (priority 9) and `wp_unique_post_slug` (priority 20); options, kill switch, post types, the shared slug builder |
+| `Plugin` | Hooks `sanitize_title` (priority 9), `wp_unique_post_slug` (priority 20) and `pre_term_slug` (priority 9, D25); options, kill switch, post types, the shared slug builder |
 | `Logger` | One-line log entries, off unless `ascii_slugs_log` is true |
 | `Encoding` | Percent-encoding checks |
 | `SlugRepair` | Audit and repair logic, independent of WP-CLI |
-| `PostSource`, `WpdbPostSource` | Read access to posts with encoded slugs, one query per batch |
+| `PostSource`, `WpdbPostSource` | Read access to posts with encoded slugs, one query per batch, plus a capped row count (D30) |
 | `RepairQuery`, `RepairRow`, `RepairReport`, `EncodedPost` | Value objects |
 | `Cli\Command` | `wp ascii-slugs preview|status|audit|repair` |
 | `SiteHealth` | The Site Health Info section |
@@ -60,7 +60,7 @@ any release.
 ### Library: `Slugger::slug()`
 
 1. `TextPreparer::prepare()` checks UTF-8 (`InvalidInputException` if not),
-   decodes entities up to three times, strips tags, removes invisible
+   decodes entities up to three times, strips tags (D27), removes invisible
    characters and in-word quotes.
 2. `TextPreparer::cap()` keeps the first 1,000 code points for
    transliteration. The hash, if needed, uses the whole prepared title.
@@ -177,7 +177,9 @@ Alphabet classes: `letter`, `mark`, `digit`, `separator`. Rule:
 ### Latin table
 
 Every letter in U+00C0 to U+024F and U+1E00 to U+1EFF whose canonical
-decomposition starts with an ASCII letter maps to that letter. These are
+decomposition starts with an ASCII letter maps to that letter. Four IPA
+letters common in African and Turkic orthographies are covered one by one:
+`ɔ` (U+0254), `ə` (U+0259), `ɛ` (U+025B) and `ʒ` (U+0292). These are
 expanded: `ß` `ss`, `æ` `ae`, `œ` `oe`, `ø` `o`, `ł` `l`, `đ` `d`, `ð` `d`,
 `þ` `th`, `ı` `i`, plus `ŋ` `ng`, `ħ` `h`, `ŧ` `t`, `ĳ` `ij`, `ǆ` `dz`,
 `ǉ` `lj`, `ǌ` `nj`, `ə` `e`, `ʒ` `zh` and a few more listed in the file.
@@ -249,15 +251,17 @@ The flag is listed under "Future" in the README and the CHANGELOG.
 Core gives no post context in that filter, so limiting it to posts is not
 possible without guessing. Term names in Indian scripts have the same
 200-byte problem, and a term slug is not a live URL until the term is saved,
-so handling them is safe. Existing term slugs are never touched (they are
-ASCII once stored). The README documents that terms are covered, and
-`ascii_slugs_should_handle` is the opt-out.
+so handling them is safe. Existing term slugs are never touched: they are
+ASCII once stored, and the one place they come back decoded (the term edit
+screen and Quick Edit) is caught by D25. The README documents that terms
+are covered, and `ascii_slugs_should_handle` is the opt-out.
 
 **D8. A Site Health section is added.** It sits on the Info tab under
 "ASCII Slugs" and shows the version, whether the plugin is enabled, whether
 `intl` is available (with the ICU version), and how many published posts of
 the covered post types still have percent-encoded slugs. The count is one
-`REGEXP` query and runs only when an administrator opens the Info tab.
+`REGEXP` query and runs only when an administrator opens the Info tab. It
+is bounded on large sites (D30).
 
 ### Rules refined during the build
 
@@ -348,27 +352,94 @@ message with non-ASCII bytes replaced; library messages never contain the
 title.
 
 **D24. Static analysis.** PHPStan runs at level 8 over the library and the
-plugin, using `php-stubs/wordpress-stubs` and `php-stubs/wp-cli-stubs`.
-Tests use their own small stand-ins in `tests/stubs/`.
+plugin, using `php-stubs/wordpress-stubs` and `php-stubs/wp-cli-stubs`,
+with `phpVersion` pinned to 8.1 to 8.3 so a call to an 8.2+ function fails
+the check. Tests use their own small stand-ins in `tests/stubs/`.
+
+### Decisions taken at code review
+
+**D25. Stored slugs that come back decoded.** Core's `editable_slug` filter
+URL-decodes a stored slug for display, and the classic editor's slug box,
+Quick Edit, the term edit screen and term Quick Edit all send that decoded
+value back on every save. For posts, `wp_insert_post()` checks the round
+trip itself in the `old-save` context, which the main path ignores, so the
+stored slug is kept (a test models it). For terms, `wp_update_term()` runs
+the value through `pre_term_slug`, then `sanitize_title` in the `save`
+context, and the main path would transliterate it: editing a category's
+description would move its URL with no redirect. The plugin therefore adds
+a third core hook, `pre_term_slug` at priority 9: when a non-ASCII value,
+encoded the way core encodes it, is the stored slug of a term in the same
+taxonomy, it returns that encoded slug, which the main path then passes as
+ASCII. A slug the editor really changed is still transliterated. The cost
+is one cached term lookup, only for non-ASCII term slugs. This extends PRD
+5.2, which lists two hooks.
+
+**D26. Repair lifts kses for its one save.** `wp_update_post()` saves the
+whole post again, and WP-CLI usually runs with no user, so core's kses
+filters are active and would strip iframes, scripts and embeds from the
+stored content. Repair changes only the slug, so it calls
+`kses_remove_filters()` before the save and `kses_init_filters()` after it,
+only when they were on. There is no capability check because there is no
+user: the command needs shell access (PRD section 8).
+
+**D27. Tags are stripped by pattern, not with `strip_tags()`.** PHP's
+`strip_tags()` treats any `<` as the start of a tag and drops everything up
+to the next `>`, or to the end: `Sensex 3<5 भारत` lost its Hindi words.
+The preparer removes only real tags (`<` then a letter or `/`) and
+comments; text inside tags is kept, as before.
+
+**D28. Table refinements.** `জ্ঞ`, `જ્ઞ` and `ଜ୍ଞ` give `gy`, like `ज्ञ`
+(PRD 4.2.5). Malayalam `ന്റ` gives `nt` and `റ്റ` gives `tt`, as written in
+practice (`എന്റെ` `ente`). Kannada U+0CDE (named FA, but the letter is
+LLLA) gives `zh`, and the nakaara pollu letters in Kannada and Telugu are
+dead `n`. Devanagari candra long e gives `e`, the Sindhi and Marwari letters
+U+0978 to U+097F are mapped, and U+0979 gives `zh`. Signs that were filed
+as letters (Kannada siddham, Malayalam vedic anusvara) are dropped marks,
+and the Malayalam dot reph gives `r`. The decomposed Tamil `ஔ` and the
+decomposed Arabic U+06C0 were added (PRD 4.1.7).
+
+**D29. Urdu exceptions match Arabic letter forms.** Urdu typed on an
+Arabic keyboard uses `ه`, `ي`, `ى` and `ك` for `ہ`, `ی` and `ک`. The
+exception lookup folds those, so `هے` finds `ہے`. Run-initial letters that
+the table drops (Arabic `ع`, the avagraha) count as covered: only true
+combining marks at the start of a run are treated as stray (PRD 4.8.5).
+
+**D30. Site Health count is bounded.** `post_name REGEXP` cannot use an
+index. Measured with MySQL 8.0 on a 2 vCPU VM: 0.25 s for 100,000 posts in
+memory, 36 s for 1,000,000 posts that did not fit the buffer pool, which
+would hang the Info screen past PHP's time limit. Site Health first counts
+published rows of the covered types on the `type_status_date` index,
+stopping at the limit (0.15 s on the million-row table), and above
+`ascii_slugs_site_health_scan_limit` (default 100,000) it shows "Not
+counted" with the WP-CLI command to run instead. `audit --format=count`
+now runs one COUNT query; before, it counted only the first `--limit`
+rows, so the number to watch stopped at 100.
 
 ## 5. Performance
 
-Measured on a shared 2 vCPU virtual machine, PHP 8.3, `intl` off:
+Measured at review on a shared 2 vCPU virtual machine, PHP 8.3, `intl`
+off, JIT off, with PHP's built-in server so OPcache keeps the compiled
+files between requests. Each figure is the median of 50 requests. The
+title is 200 code points of Devanagari news words.
 
 | Case | Budget (section 9) | Measured |
 |---|---|---|
-| ASCII title in `sanitize_title` | under 2 µs | about 0.1 µs for the byte-class test |
-| 200 code point Devanagari title, table loaded | under 0.5 ms | about 0.4 ms |
-| Same, first call including the table load | under 0.5 ms | about 1 to 2 ms on CLI without OPcache; not met there (see below) |
+| ASCII title in `sanitize_title` | under 2 µs | one byte-class test, well under 1 µs |
+| 200 code point Devanagari title, table loaded | under 0.5 ms | about 0.5 to 0.6 ms |
+| Same, first call in a request, OPcache on | under 0.5 ms | about 1.2 ms: not met |
+| Same, first call, OPcache off | | about 4 ms |
 | Memory with every table loaded | under 512 KB | about 360 KB with OPcache, about 530 KB without |
 
-The cold first call is over budget when measured on the CLI without
-OPcache: parsing the table file and building its lookup maps take about
-0.4 ms on their own, and the per-character caches start empty. With OPcache
-the table arrays come from shared memory and only the lookup maps are
-built, but a warm-OPcache first call was not measured for 0.1.0. Speeding up
-table construction (for example, storing the precomputed lookup maps in the
-table files) is a candidate for a later release.
+The first call splits into about 0.1 ms to build the `Slugger` and its
+range index, about 0.45 ms to load the classes and the Devanagari table and
+build its lookup maps (0.15 ms of that is the maps), and about 0.7 ms to
+transliterate with empty per-character caches. The steady-state cost is
+about 2.5 µs per code point, most of it in building one token object per
+code point and in the engine's per-token work. Making the first call meet
+the budget needs both precomputed lookup maps in the table files and a
+leaner tokenizer; it is listed as planned in the CHANGELOG. A news title is
+usually 60 to 120 code points, so the real first-call cost per saved post is
+nearer 0.5 to 0.8 ms, and it is paid once per save, not per page view.
 
 ## 6. Acceptance tests
 
@@ -385,6 +456,11 @@ table files) is a candidate for a later release.
 | 51 to 58 | `tests/Plugin/RepairTest.php` |
 | 59, 61 | `tests/Plugin/FailureModesTest.php` |
 | 5.4, 11, D8 | `tests/Plugin/CliAndSiteHealthTest.php` |
+| D25 | `tests/Plugin/SanitizeTitleTest.php` |
+| D26, D30 (audit count) | `tests/Plugin/RepairTest.php` |
+| D27 | `tests/Unit/PreparationTest.php` |
+| D28, D29 | `tests/Unit/ScriptTablesTest.php`, `tests/Unit/PreparationTest.php` |
+| D30 (Site Health) | `tests/Plugin/CliAndSiteHealthTest.php` |
 | Custom tables | `tests/Unit/CustomTableTest.php` |
 | Library without WordPress | `tests/Unit/FrameworkFreeTest.php` |
 
