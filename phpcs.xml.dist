@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<ruleset name="ascii-slugs">
+    <description>PSR-12 for the library, the plugin and the tests.</description>
+    <file>src</file>
+    <file>plugin/src</file>
+    <file>tests</file>
+    <file>examples</file>
+    <file>bootstrap.php</file>
+    <file>ascii-slugs.php</file>
+    <file>uninstall.php</file>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <rule ref="PSR12"/>
+
+    <!-- Data tables are long arrays with trailing comments. -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="150"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+
+    <!-- The WordPress and WP-CLI stand-ins must use WordPress names. -->
+    <rule ref="PSR1.Classes.ClassDeclaration.MultipleClasses">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.Classes.ValidClassName.NotCamelCaps">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Methods.CamelCapsMethodName.NotCamelCaps">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+        <exclude-pattern>ascii-slugs.php</exclude-pattern>
+        <exclude-pattern>uninstall.php</exclude-pattern>
+    </rule>
+</ruleset>

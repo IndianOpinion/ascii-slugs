@@ -1,0 +1,18 @@
+parameters:
+    level: 8
+    # The lowest supported PHP first: calls to 8.2+ functions fail here.
+    phpVersion:
+        min: 80100
+        max: 80399
+    paths:
+        - src
+        - plugin/src
+        - tables
+        - bootstrap.php
+        - ascii-slugs.php
+        - uninstall.php
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+    bootstrapFiles:
+        - tests/phpstan-constants.php
